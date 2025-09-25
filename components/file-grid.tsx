@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Download, FileText, ImageIcon, Video, Music, Archive, File } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Download, FileText, ImageIcon, Video, Music, Archive, File, Share, Copy, Check } from "lucide-react"
 
 interface FileData {
   id: string
@@ -25,6 +26,8 @@ interface FileGridProps {
 
 export function FileGrid({ files }: FileGridProps) {
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set())
+  const [copiedFiles, setCopiedFiles] = useState<Set<string>>(new Set())
+  const { toast } = useToast()
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) return <ImageIcon className="h-8 w-8 text-blue-500" />
@@ -77,6 +80,46 @@ export function FileGrid({ files }: FileGridProps) {
     }
   }
 
+  const handleShare = async (file: FileData) => {
+    try {
+      const shareUrl = `${window.location.origin}/share/${file.share_token}`
+      await navigator.clipboard.writeText(shareUrl)
+      
+      setCopiedFiles((prev) => new Set(prev).add(file.id))
+      
+      toast({
+        title: "¡Enlace copiado!",
+        description: "El enlace para compartir ha sido copiado al portapapeles.",
+      })
+      
+      // Reset the copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedFiles((prev) => {
+          const newSet = new Set(prev)
+          newSet.delete(file.id)
+          return newSet
+        })
+      }, 2000)
+    } catch (error) {
+      console.error("Error copying share link:", error)
+      // Fallback for older browsers
+      const shareUrl = `${window.location.origin}/share/${file.share_token}`
+      
+      // Try to use the prompt as fallback
+      const userAgent = navigator.userAgent.toLowerCase()
+      if (userAgent.includes('mobile')) {
+        // On mobile, show a more user-friendly dialog
+        toast({
+          title: "Copiar enlace manualmente",
+          description: "Tu navegador no soporta copiar automáticamente. Ve al menú de compartir para obtener el enlace.",
+          variant: "destructive"
+        })
+      } else {
+        prompt("Copia este enlace para compartir:", shareUrl)
+      }
+    }
+  }
+
   if (files.length === 0) {
     return (
       <Card className="text-center py-12">
@@ -122,15 +165,36 @@ export function FileGrid({ files }: FileGridProps) {
                 Subido: {new Date(file.created_at).toLocaleDateString("es-ES")}
               </div>
 
-              <Button
-                onClick={() => handleDownload(file)}
-                disabled={downloadingFiles.has(file.id)}
-                className="w-full"
-                size="sm"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {downloadingFiles.has(file.id) ? "Descargando..." : "Descargar"}
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => handleDownload(file)}
+                  disabled={downloadingFiles.has(file.id)}
+                  className="flex-1"
+                  size="sm"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {downloadingFiles.has(file.id) ? "Descargando..." : "Descargar"}
+                </Button>
+
+                <Button
+                  onClick={() => handleShare(file)}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                >
+                  {copiedFiles.has(file.id) ? (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      ¡Copiado!
+                    </>
+                  ) : (
+                    <>
+                      <Share className="h-4 w-4 mr-2" />
+                      Compartir
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
