@@ -51,26 +51,46 @@ export function FileGrid({ files }: FileGridProps) {
     setDownloadingFiles((prev) => new Set(prev).add(file.id))
 
     try {
-      const supabase = createClient()
+      // Use our new API endpoint that handles IP limits
+      const response = await fetch(`/api/download/${file.share_token}`)
+      const result = await response.json()
 
-      const { data, error } = await supabase.storage.from("files").createSignedUrl(file.storage_path, 3600) // 1 hour expiry
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Too many downloads
+          toast({
+            title: "Límite alcanzado",
+            description: result.error || "Has alcanzado el límite de descargas para este archivo.",
+            variant: "destructive"
+          })
+          return
+        }
+        throw new Error(result.error || "Error al procesar la descarga")
+      }
 
-      if (error) throw error
+      // Show remaining attempts message if available
+      if (result.message && result.remainingAttempts > 0) {
+        toast({
+          title: "Descarga iniciada",
+          description: result.message,
+        })
+      }
 
-      await supabase
-        .from("files")
-        .update({ download_count: file.download_count + 1 })
-        .eq("id", file.id)
-
+      // Trigger download using the signed URL from our API
       const link = document.createElement("a")
-      link.href = data.signedUrl
-      link.download = file.original_filename
+      link.href = result.downloadUrl
+      link.download = result.filename
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+
     } catch (error) {
       console.error("Error downloading file:", error)
-      alert("Error al descargar el archivo. Inténtalo de nuevo.")
+      toast({
+        title: "Error de descarga",
+        description: "Error al descargar el archivo. Inténtalo de nuevo.",
+        variant: "destructive"
+      })
     } finally {
       setDownloadingFiles((prev) => {
         const newSet = new Set(prev)

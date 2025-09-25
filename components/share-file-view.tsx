@@ -49,26 +49,32 @@ export function ShareFileView({ file }: ShareFileViewProps) {
     setIsDownloading(true)
 
     try {
-      const supabase = createClient()
+      // Use our new API endpoint that handles IP limits
+      const response = await fetch(`/api/download/${file.share_token}`)
+      const result = await response.json()
 
-      // Create signed URL for download
-      const { data, error } = await supabase.storage.from("files").createSignedUrl(file.storage_path, 3600) // 1 hour expiry
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Too many downloads
+          alert(result.error || "Has alcanzado el límite de descargas para este archivo.")
+          return
+        }
+        throw new Error(result.error || "Error al procesar la descarga")
+      }
 
-      if (error) throw error
+      // Show remaining attempts message if available
+      if (result.message) {
+        console.log(result.message)
+      }
 
-      // Increment download count
-      await supabase
-        .from("files")
-        .update({ download_count: file.download_count + 1 })
-        .eq("id", file.id)
-
-      // Trigger download
+      // Trigger download using the signed URL from our API
       const link = document.createElement("a")
-      link.href = data.signedUrl
-      link.download = file.original_filename
+      link.href = result.downloadUrl
+      link.download = result.filename
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+
     } catch (error) {
       console.error("Error downloading file:", error)
       alert("Error al descargar el archivo. Inténtalo de nuevo.")
@@ -158,7 +164,8 @@ export function ShareFileView({ file }: ShareFileViewProps) {
             {/* Security Notice */}
             <div className="text-xs text-muted-foreground text-center p-4 bg-secondary/50 rounded-lg">
               <p>🔒 Este archivo es compartido de forma segura</p>
-              <p>El enlace de descarga expira en 1 hora por motivos de seguridad</p>
+              <p>Máximo 3 descargas por IP cada 24 horas</p>
+              <p>Enlaces permanentes sin expiración</p>
             </div>
           </div>
         </CardContent>
