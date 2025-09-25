@@ -25,8 +25,23 @@ export function UploadSection() {
     try {
       const supabase = createClient()
 
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      // Generate a better filename that preserves the original name
+      const originalName = file.name
+      const fileExt = originalName.split(".").pop()
+      const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf(".")) || originalName
+      
+      // Clean the filename: remove special characters but keep spaces, numbers, letters and common symbols
+      const cleanName = nameWithoutExt
+        .replace(/[^a-zA-Z0-9\s\-_()[\]]/g, '') // Remove special chars except common ones
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .substring(0, 50) // Limit length to 50 characters
+      
+      // Create unique identifier (shorter than before)
+      const timestamp = Date.now().toString().slice(-8) // Last 8 digits of timestamp
+      const randomId = Math.random().toString(36).substring(2, 6) // 4 random characters
+      
+      // Construct the final filename: cleanName_timestamp_randomId.ext
+      const fileName = `${cleanName}_${timestamp}_${randomId}.${fileExt}`
       const shareToken = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2)
 
       const { data: uploadData, error: uploadError } = await supabase.storage.from("files").upload(fileName, file, {
