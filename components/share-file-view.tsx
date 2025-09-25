@@ -84,13 +84,9 @@ export function ShareFileView({ file }: ShareFileViewProps) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-lg mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Volver al inicio
-        </Link>
         <h1 className="text-3xl font-bold mb-2">Archivo Compartido</h1>
         <p className="text-muted-foreground">
           Descarga este archivo compartido de forma segura
@@ -128,7 +124,8 @@ export function ShareFileView({ file }: ShareFileViewProps) {
                 </div>
               </div>
               <div className="col-span-2">
-                <span className="text-muted-foreground">Subido:</span>
+                {/* <span className="text-muted-foreground">Subido:</span> */}
+                <span className="text-muted-foreground">Actualizado:</span>
                 <div className="font-medium">
                   {new Date(file.created_at).toLocaleDateString("es-ES", {
                     year: "numeric",
@@ -156,16 +153,17 @@ export function ShareFileView({ file }: ShareFileViewProps) {
               ) : (
                 <>
                   <Download className="h-5 w-5 mr-2" />
-                  Descargar {file.original_filename}
+                  Descargar
                 </>
               )}
             </Button>
 
             {/* Security Notice */}
             <div className="text-xs text-muted-foreground text-center p-4 bg-secondary/50 rounded-lg">
-              <p>🔒 Este archivo es compartido de forma segura</p>
-              <p>Máximo 3 descargas por IP cada 24 horas</p>
-              <p>Enlaces permanentes sin expiración</p>
+              <p>Si hay algún problema con la descarga, por favor contacta al soporte.</p>
+              <p>
+                <a href="https://www.drudev.me/contacto" className="text-blue-500 hover:underline">Te responderé lo antes posible.</a>
+              </p>
             </div>
           </div>
         </CardContent>
