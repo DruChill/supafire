@@ -115,14 +115,14 @@ export function ShareFileView({ file }: ShareFileViewProps) {
                 <span className="text-muted-foreground">Tipo de archivo:</span>
                 <div className="font-medium">{file.mime_type}</div>
               </div>
-              <div>
+              {/* <div>
                 <span className="text-muted-foreground">Descargas:</span>
                 <div>
                   <Badge variant="secondary" className="ml-1">
                     {file.download_count}
                   </Badge>
                 </div>
-              </div>
+              </div> */}
               <div className="col-span-2">
                 {/* <span className="text-muted-foreground">Subido:</span> */}
                 <span className="text-muted-foreground">Actualizado:</span>
@@ -161,8 +161,8 @@ export function ShareFileView({ file }: ShareFileViewProps) {
             {/* Security Notice */}
             <div className="text-xs text-muted-foreground text-center p-4 bg-secondary/50 rounded-lg">
               <p>Si hay algún problema con la descarga, por favor contacta al soporte.</p>
-              <p>
-                <a href="https://www.drudev.me/contacto" className="text-blue-500 hover:underline">Te responderé lo antes posible.</a>
+              <p> 
+                <a href="https://www.drudev.me/contacto" className="text-blue-500 hover:underline">Te responderemos lo antes posible.</a>
               </p>
             </div>
           </div>
