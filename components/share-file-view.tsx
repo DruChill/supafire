@@ -1,12 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Download, FileText, ImageIcon, Video, Music, Archive, File, ArrowLeft, Loader2 } from "lucide-react"
-import Link from "next/link"
+import { Download, FileText, ImageIcon, Video, Music, Archive, File, Loader2 } from "lucide-react"
 
 interface FileData {
   id: string
@@ -26,6 +24,27 @@ interface ShareFileViewProps {
 
 export function ShareFileView({ file }: ShareFileViewProps) {
   const [isDownloading, setIsDownloading] = useState(false)
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null)
+
+  // Check remaining download attempts when component loads
+  useEffect(() => {
+    const checkRemainingAttempts = async () => {
+      try {
+        const response = await fetch(`/api/check-limits/${file.share_token}`)
+        const result = await response.json()
+        
+        if (response.ok) {
+          setRemainingAttempts(result.remainingAttempts)
+        }
+      } catch (error) {
+        console.error("Error checking remaining attempts:", error)
+        // Default to 3 if we can't check
+        setRemainingAttempts(3)
+      }
+    }
+
+    checkRemainingAttempts()
+  }, [file.share_token])
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.startsWith("image/")) return <ImageIcon className="h-16 w-16 text-blue-500" />
@@ -67,6 +86,11 @@ export function ShareFileView({ file }: ShareFileViewProps) {
         console.log(result.message)
       }
 
+      // Update remaining attempts after successful download
+      if (typeof result.remainingAttempts === 'number') {
+        setRemainingAttempts(result.remainingAttempts)
+      }
+
       // Trigger download using the signed URL from our API
       const link = document.createElement("a")
       link.href = result.downloadUrl
@@ -86,12 +110,6 @@ export function ShareFileView({ file }: ShareFileViewProps) {
   return (
     <div className="max-w-lg mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Archivo Compartido</h1>
-        <p className="text-muted-foreground">
-          Descarga este archivo compartido de forma segura
-        </p>
-      </div>
 
       {/* File Card */}
       <Card className="shadow-lg">
@@ -115,14 +133,22 @@ export function ShareFileView({ file }: ShareFileViewProps) {
                 <span className="text-muted-foreground">Tipo de archivo:</span>
                 <div className="font-medium">{file.mime_type}</div>
               </div>
-              {/* <div>
-                <span className="text-muted-foreground">Descargas:</span>
+              <div>
+                <span className="text-muted-foreground">Descargas restantes:</span>
                 <div>
-                  <Badge variant="secondary" className="ml-1">
-                    {file.download_count}
-                  </Badge>
+                  {remainingAttempts !== null ? (
+                    <Badge 
+                      variant={remainingAttempts > 1 ? "secondary" : remainingAttempts === 1 ? "destructive" : "outline"} 
+                    >
+                      {remainingAttempts === 0 ? "Agotadas" : `${remainingAttempts} restante${remainingAttempts !== 1 ? 's' : ''}`}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">
+                      Verificando...
+                    </Badge>
+                  )}
                 </div>
-              </div> */}
+              </div>
               <div className="col-span-2">
                 {/* <span className="text-muted-foreground">Subido:</span> */}
                 <span className="text-muted-foreground">Actualizado:</span>
@@ -141,7 +167,7 @@ export function ShareFileView({ file }: ShareFileViewProps) {
             {/* Download Button */}
             <Button
               onClick={handleDownload}
-              disabled={isDownloading}
+              disabled={isDownloading || remainingAttempts === 0}
               className="w-full h-12 text-lg"
               size="lg"
             >
@@ -149,6 +175,11 @@ export function ShareFileView({ file }: ShareFileViewProps) {
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   Descargando...
+                </>
+              ) : remainingAttempts === 0 ? (
+                <>
+                  <Download className="h-5 w-5 mr-2" />
+                  Sin descargas disponibles
                 </>
               ) : (
                 <>
@@ -160,9 +191,16 @@ export function ShareFileView({ file }: ShareFileViewProps) {
 
             {/* Security Notice */}
             <div className="text-xs text-muted-foreground text-center p-4 bg-secondary/50 rounded-lg">
-              <p>Si hay algún problema con la descarga, por favor contacta al soporte.</p>
-              <p> 
-                <a href="https://www.drudev.me/contacto" className="text-blue-500 hover:underline">Te responderemos lo antes posible.</a>
+              <p>Imagina cuanto ahorras al usar esto ¡Muchooooo!</p>
+              {remainingAttempts === 0 && (
+                <p className="text-destructive font-medium mt-2">
+                  ⏰ Has agotado tus descargas. Intenta mañana.
+                </p>
+              )}
+              <p className="mt-2"> 
+                <a href="https://www.drudev.me/contacto" className="text-blue-500 hover:underline">
+                  ¿Problemas? Contáctanos aquí.
+                </a>
               </p>
             </div>
           </div>
