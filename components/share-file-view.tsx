@@ -191,7 +191,7 @@ export function ShareFileView({ file }: ShareFileViewProps) {
 
             {/* Security Notice */}
             <div className="text-xs text-muted-foreground text-center p-4 bg-secondary/50 rounded-lg">
-              <p>Imagina cuanto ahorras al usar esto ¡Muchooooo!</p>
+              <p>Imagina cuanto ahorras al usar esto ¡Muchísimo!</p>
               {remainingAttempts === 0 && (
                 <p className="text-destructive font-medium mt-2">
                   ⏰ Has agotado tus descargas. Intenta mañana.
